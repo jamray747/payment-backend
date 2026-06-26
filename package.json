@@ -1,0 +1,10 @@
+{
+  "name": "ar-payment-backend",
+  "version": "1.0.0",
+  "description": "Payment/Entitlement-Backend fuer die AR-App (Railway)",
+  "type": "module",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2", "pg": "^8.12.0" }
+}
