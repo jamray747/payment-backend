@@ -81,7 +81,7 @@ app.get('/', (req, res) => res.send('AR payment backend OK (biller=' + BILLER + 
 // Welche Modelle besitzt dieses Geraet?
 app.get('/entitlements', async (req, res) => {
   const device = String(req.query.device || '')
-  if (!device) return res.status(400).json({error: 'device fehlt'})
+  if (!device) return res.status(400).json({error: 'device missing'})
   res.json({skus: await listSkus(device)})
 })
 
@@ -90,7 +90,7 @@ app.get('/checkout', async (req, res) => {
   const device = String(req.query.device || '')
   const sku = String(req.query.sku || '')
   const ret = String(req.query.return || '/')
-  if (!device || !CATALOG[sku]) return res.status(400).send('Ungueltiges Produkt oder Geraet')
+  if (!device || !CATALOG[sku]) return res.status(400).send('Invalid product or device')
 
   if (BILLER === 'test') {
     // ===== NUR ZUM TESTEN: sofort freischalten und zurueck =====
@@ -106,7 +106,7 @@ app.get('/checkout', async (req, res) => {
   // TODO (CCBill: dynamic pricing form; Verotel: FlexPay; SegPay: dynamic):
   //   const url = buildBillerCheckoutUrl({device, sku, price: CATALOG[sku].price, ret})
   //   return res.redirect(url)
-  return res.status(501).send('Abrechner-Checkout noch nicht konfiguriert (BILLER=' + BILLER + ')')
+  return res.status(501).send('Payment provider checkout not configured (BILLER=' + BILLER + ')')
 })
 
 // Postback/Webhook des Abrechners -> Freischaltung
@@ -119,7 +119,7 @@ app.all('/postback', async (req, res) => {
     await grant(device, sku)
     return res.send('OK')
   }
-  res.status(400).send('fehlende/ungueltige Daten')
+  res.status(400).send('Missing or invalid data')
 })
 
 // Phase 2: geschuetzte Auslieferung der bezahlten .glb (Stub)
@@ -127,10 +127,10 @@ app.get('/model', async (req, res) => {
   const device = String(req.query.device || '')
   const sku = String(req.query.sku || '')
   const owned = await listSkus(device)
-  if (!owned.includes(sku)) return res.status(403).send('nicht gekauft')
+  if (!owned.includes(sku)) return res.status(403).send('Not purchased')
   // TODO: signierte, ablaufende URL aus privatem Storage erzeugen und hierher umleiten:
   //   return res.redirect(signPrivateUrl(sku))
-  res.status(501).send('Signierte Auslieferung noch nicht konfiguriert')
+  res.status(501).send('Signed delivery not configured yet')
 })
 
 initStore()
