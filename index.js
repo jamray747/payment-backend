@@ -33,7 +33,9 @@ const CATALOG = {
   'assets/11.glb':    {price: 2.99, name: 'Nadine'},
   'assets/12.glb':    {price: 2.99, name: 'Jana'},
   'assets/13.glb':    {price: 2.99, name: 'Mary'},
-  'assets/14.glb':    {price: 2.99, name: 'Model 14'},
+  'assets/14.glb':    {price: 2.99, name: 'Alice'},
+  'assets/15.glb':    {price: 2.99, name: 'Lena'},
+  'assets/16.glb':    {price: 2.99, name: 'Sophia'},
 }
 
 // --- Speicher: Postgres falls DATABASE_URL, sonst In-Memory (nur Test) ---
