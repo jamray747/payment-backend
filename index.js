@@ -1,5 +1,8 @@
 import express from 'express'
 import pkg from 'pg'
+import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
 const { Pool } = pkg
 
 // ============================================================================
@@ -18,6 +21,18 @@ const { Pool } = pkg
 const PORT = process.env.PORT || 3000
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*'
 const BILLER = process.env.BILLER || 'test'
+
+// --- Signierte Auslieferung der bezahlten .glb ---
+//   SIGNING_SECRET  -> in Railway setzen (langer Zufallswert)!
+//   Dateien liegen in ./protected/ (z. B. protected/2.glb) und werden NUR mit
+//   gueltiger, kurzlebiger Signatur ausgeliefert.
+const SIGNING_SECRET = process.env.SIGNING_SECRET || 'dev-insecure-change-me'
+const PROTECTED_DIR = path.join(process.cwd(), 'protected')
+const SIGN_TTL_MS = 2 * 60 * 60 * 1000  // 2 Stunden gueltig
+
+function sign(sku, device, exp) {
+  return crypto.createHmac('sha256', SIGNING_SECRET).update(sku + '|' + device + '|' + exp).digest('hex')
+}
 
 // --- Produktkatalog: MUSS zu models.ts passen (sku = url) ---
 const CATALOG = {
@@ -131,15 +146,40 @@ app.all('/postback', async (req, res) => {
   res.status(400).send('Missing or invalid data')
 })
 
-// Phase 2: geschuetzte Auslieferung der bezahlten .glb (Stub)
-app.get('/model', async (req, res) => {
+// Signierte, kurzlebige URL fuer ein bezahltes Modell (nur fuer freigeschaltete Geraete).
+app.get('/sign', async (req, res) => {
   const device = String(req.query.device || '')
   const sku = String(req.query.sku || '')
+  if (!device || !CATALOG[sku]) return res.status(400).json({error: 'Invalid product or device'})
+  const owned = await listSkus(device)
+  if (!owned.includes(sku)) return res.status(403).json({error: 'Not purchased'})
+  const exp = Date.now() + SIGN_TTL_MS
+  const sig = sign(sku, device, exp)
+  const base = encodeURIComponent(path.basename(sku))
+  const q = 'device=' + encodeURIComponent(device) + '&exp=' + exp + '&sig=' + sig
+  res.json({url: '/model/' + base + '?' + q, exp})
+})
+
+// Geschuetzte Auslieferung: streamt die .glb nur mit gueltiger, nicht abgelaufener Signatur.
+app.get('/model/:file', async (req, res) => {
+  const base = path.basename(String(req.params.file || ''))  // verhindert Path-Traversal
+  const sku = 'assets/' + base
+  const device = String(req.query.device || '')
+  const exp = parseInt(String(req.query.exp || '0'), 10)
+  const sig = String(req.query.sig || '')
+  if (!CATALOG[sku]) return res.status(404).send('Unknown product')
+  if (!exp || Date.now() > exp) return res.status(403).send('Link expired')
+  const expected = sign(sku, device, exp)
+  const ok = sig.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))
+  if (!ok) return res.status(403).send('Bad signature')
   const owned = await listSkus(device)
   if (!owned.includes(sku)) return res.status(403).send('Not purchased')
-  // TODO: signierte, ablaufende URL aus privatem Storage erzeugen und hierher umleiten:
-  //   return res.redirect(signPrivateUrl(sku))
-  res.status(501).send('Signed delivery not configured yet')
+  const file = path.join(PROTECTED_DIR, base)
+  if (!fs.existsSync(file)) return res.status(404).send('File not available on server')
+  res.setHeader('Content-Type', 'model/gltf-binary')
+  res.setHeader('Cache-Control', 'private, no-store')
+  fs.createReadStream(file).pipe(res)
 })
 
 initStore()
