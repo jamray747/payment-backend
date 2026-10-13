@@ -37,7 +37,6 @@ function sign(sku, device, exp) {
 // --- Produktkatalog: MUSS zu models.ts passen (sku = url) ---
 const CATALOG = {
   'assets/2.glb':     {price: 2.99, name: 'Vendelin'},
-  'assets/3.glb':     {price: 2.99, name: 'Anoki'},
   'assets/4.glb':     {price: 2.99, name: 'Scarlett'},
   'assets/5.glb':     {price: 2.99, name: 'Cloe on chair'},
   'assets/6_opt.glb': {price: 2.99, name: 'Scarlett on chair'},
@@ -45,8 +44,6 @@ const CATALOG = {
   'assets/8.glb':     {price: 2.99, name: 'Scarlett Joy'},
   'assets/9_opt.glb': {price: 2.99, name: 'Scarlett on chair'},
   'assets/10_opt.glb':{price: 2.99, name: 'Vivian on chair'},
-  'assets/11.glb':    {price: 2.99, name: 'Nadine'},
-  'assets/12.glb':    {price: 2.99, name: 'Jana'},
   'assets/13.glb':    {price: 2.99, name: 'Mary'},
   'assets/14.glb':    {price: 2.99, name: 'Alice'},
   'assets/15.glb':    {price: 2.99, name: 'Lena'},
